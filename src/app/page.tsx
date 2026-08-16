@@ -2,6 +2,7 @@ import { getCreatives } from "@/lib/data";
 import { FilterProvider } from "@/context/FilterContext";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { FiltersBar } from "@/components/dashboard/FiltersBar";
+import { UploadDataControl } from "@/components/dashboard/UploadDataControl";
 import { KpiCards } from "@/components/dashboard/KpiCards";
 import { SpendStructureSection } from "@/components/dashboard/SpendStructureSection";
 import { EffectiveVsIneffectiveSection } from "@/components/dashboard/EffectiveVsIneffectiveSection";
@@ -20,6 +21,7 @@ export default function Home() {
     <FilterProvider data={creatives}>
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
         <DashboardHeader />
+        <UploadDataControl />
         <FiltersBar />
         <KpiCards />
         <SpendStructureSection />
