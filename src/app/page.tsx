@@ -31,7 +31,7 @@ export default function Home() {
         <ConceptPerformanceSection />
         <CostOfFailureSection />
         <InsightsSection />
-        <footer className="pb-6 pt-2 text-center text-xs text-slate-400">
+        <footer className="pb-6 pt-2 text-center text-xs text-slate-500">
           Data source: data.xlsx · Generated via scripts/convertData.mjs
         </footer>
       </main>

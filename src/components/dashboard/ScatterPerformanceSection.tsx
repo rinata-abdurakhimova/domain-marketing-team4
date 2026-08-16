@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { useFilters } from "@/context/FilterContext";
 import { Card } from "@/components/dashboard/ui/Card";
+import { SectionTitle } from "@/components/dashboard/ui/SectionTitle";
 import { EmptyState } from "@/components/dashboard/ui/EmptyState";
 import { formatCpuSlay, formatCurrency, formatCurrencyCompact, formatSignedPercent } from "@/lib/format";
 import { STATUS } from "@/lib/colors";
@@ -38,7 +39,7 @@ export function ScatterPerformanceSection() {
   return (
     <section>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-bold text-slate-800">Spend vs Performance</h2>
+        <SectionTitle icon="🔬" title="Spend vs Performance" />
         {showToggle && (
           <div className="inline-flex rounded-full bg-blue-50 p-1">
             <button

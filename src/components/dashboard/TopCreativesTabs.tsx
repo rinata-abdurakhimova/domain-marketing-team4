@@ -11,6 +11,7 @@ import {
   topWmnByCpuSlay,
 } from "@/lib/analytics";
 import { Card } from "@/components/dashboard/ui/Card";
+import { SectionTitle } from "@/components/dashboard/ui/SectionTitle";
 import { CreativeTable } from "@/components/dashboard/CreativeTable";
 import { formatPercent } from "@/lib/format";
 import { EmptyState } from "@/components/dashboard/ui/EmptyState";
@@ -30,7 +31,7 @@ export function TopCreativesTabs() {
 
   return (
     <section>
-      <h2 className="mb-3 text-lg font-bold text-slate-800">Top Creatives</h2>
+      <SectionTitle icon="🏆" title="Top Creatives" className="mb-3" />
       <Card>
         <div className="mb-4 flex flex-wrap gap-2 border-b border-blue-100 pb-3">
           {TABS.map((t) => (
