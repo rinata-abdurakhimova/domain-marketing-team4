@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useFilters } from "@/context/FilterContext";
 import { spendBy, topSpendBy } from "@/lib/analytics";
 import { Card } from "@/components/dashboard/ui/Card";
+import { SectionTitle } from "@/components/dashboard/ui/SectionTitle";
 import { SpendDonut } from "@/components/dashboard/charts/SpendDonut";
 import { SpendBarChart } from "@/components/dashboard/charts/SpendBarChart";
 import { SpendHorizontalBarChart } from "@/components/dashboard/charts/SpendHorizontalBarChart";
@@ -22,7 +23,7 @@ export function SpendStructureSection() {
 
   return (
     <section>
-      <h2 className="mb-3 text-lg font-bold text-slate-800">Spend Structure</h2>
+      <SectionTitle icon="💰" title="Spend Structure" className="mb-3" />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card title="Spend by Audience" subtitle="Share of total spend, MN vs WMN">
           <SpendDonut data={byAudience} />

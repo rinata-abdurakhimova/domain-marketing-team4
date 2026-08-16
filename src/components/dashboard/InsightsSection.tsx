@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useFilters } from "@/context/FilterContext";
 import { generateInsights } from "@/lib/analytics";
 import { Card } from "@/components/dashboard/ui/Card";
+import { SectionTitle } from "@/components/dashboard/ui/SectionTitle";
 
 export function InsightsSection() {
   const { filteredData } = useFilters();
@@ -11,7 +12,7 @@ export function InsightsSection() {
 
   return (
     <section>
-      <h2 className="mb-3 text-lg font-bold text-slate-800">Automatic Data Insights</h2>
+      <SectionTitle icon="✨" title="Automatic Data Insights" className="mb-3" />
       <Card>
         <ul className="flex flex-col gap-3">
           {insights.map((insight) => (

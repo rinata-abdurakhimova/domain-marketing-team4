@@ -45,7 +45,7 @@ export function CostOfFailureBarChart({ data }: { data: CostOfFailureItem[] }) {
                 <p className="mb-1 truncate font-semibold text-slate-700">{label}</p>
                 <p className="text-slate-500">Spend: {formatCurrency(row.spend)}</p>
                 <p className="text-red-600">{row.actualLabel}</p>
-                <p className="text-slate-400">{row.targetLabel}</p>
+                <p className="text-slate-500">{row.targetLabel}</p>
               </div>
             );
           }}

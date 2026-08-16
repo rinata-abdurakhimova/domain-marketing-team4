@@ -35,7 +35,7 @@ export function CreativeTable({ data, extraColumn }: CreativeTableProps) {
     <div className="-mx-1 overflow-x-auto">
       <table className="w-full min-w-[720px] border-collapse text-sm">
         <thead>
-          <tr className="border-b border-blue-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+          <tr className="border-b border-blue-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
             {columns.map((col) => (
               <th key={col.key} className={`px-2 py-2 ${col.align === "right" ? "text-right" : "text-left"}`}>
                 {col.label}

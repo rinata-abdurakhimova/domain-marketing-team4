@@ -23,7 +23,7 @@ export function FiltersBar() {
   const efficiencyOptions: EfficiencyFilter[] = ["All", "Effective", "Ineffective"];
 
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-blue-100 bg-white p-4 shadow-sm shadow-blue-100/50">
+    <div className="flex flex-wrap items-end gap-3 rounded-3xl border border-blue-100 bg-white/95 p-4 shadow-md shadow-blue-200/30 backdrop-blur-sm">
       <Select
         label="Audience"
         value={filters.audience}

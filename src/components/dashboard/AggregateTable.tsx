@@ -18,7 +18,7 @@ export function AggregateTable({ nameLabel, rows }: { nameLabel: string; rows: R
     <div className="-mx-1 overflow-x-auto">
       <table className="w-full min-w-[640px] border-collapse text-sm">
         <thead>
-          <tr className="border-b border-blue-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+          <tr className="border-b border-blue-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
             <th className="px-2 py-2">{nameLabel}</th>
             <th className="px-2 py-2 text-right">Spend</th>
             <th className="px-2 py-2 text-right">Creatives</th>
