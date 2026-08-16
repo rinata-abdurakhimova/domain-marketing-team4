@@ -4,11 +4,11 @@ An interactive performance-marketing dashboard built with **Next.js**, **TypeScr
 
 ## Data pipeline
 
-`data.xlsx` is the source of truth (already cleaned by the analyst). Reading `.xlsx` directly in Next.js server/client components is avoided (heavy dependency, breaks edge/serverless bundling), so instead:
+`data.xlsx` (committed in the repo root) is the **default** dataset, already cleaned by the analyst.
 
-1. `scripts/convertData.mjs` reads `data.xlsx` (using the `xlsx` package, a **devDependency only**) and writes `src/data/data.json`.
+1. `scripts/convertData.mjs` reads `data.xlsx` (using the `xlsx` package) and writes `src/data/data.json` at build time.
 2. `npm run predev` / `npm run prebuild` run this script automatically before `next dev` / `next build`.
-3. The app only ever reads the generated `src/data/data.json` via `src/lib/data.ts` — no Excel parsing at runtime.
+3. The app reads the generated `src/data/data.json` via `src/lib/data.ts` as its default dataset — no Excel parsing needed just to load the page.
 
 To regenerate the JSON manually:
 
@@ -17,6 +17,10 @@ npm run convert-data
 ```
 
 `src/data/data.json` is git-ignored since it's a build artifact regenerated from `data.xlsx`.
+
+### Uploading a different spreadsheet at runtime
+
+The header includes a **file upload control**: pick any `.xlsx`/`.xls` file with the same columns as `data.xlsx` and click **Run Analysis**. The file is parsed entirely in the browser (via `src/lib/parseWorkbook.ts`, using the `xlsx` package loaded on demand so it doesn't bloat the initial page load) and swaps the dashboard's active dataset — no redeploy or server round-trip needed. Click **Reset to default data.xlsx** to go back to the committed dataset. Because parsing now also happens client-side, `xlsx` is a regular `dependency` (not dev-only).
 
 ## Business logic
 
@@ -32,13 +36,15 @@ ROI and CPU Slay are never averaged or ranked together — they are different me
 ## Project structure
 
 ```
-scripts/convertData.mjs        Excel -> JSON conversion script
+scripts/convertData.mjs        Excel -> JSON conversion script (build-time default dataset)
 src/data/data.json             generated data (git-ignored)
 src/types/creative.ts          TypeScript interfaces
 src/lib/format.ts              currency/percent/number formatters
 src/lib/colors.ts              dopamine-blue palette + status colors
 src/lib/analytics.ts           filtering, aggregation, insights
-src/context/FilterContext.tsx  global filter state
+src/lib/creativeColumnMap.ts   shared column mapping (mirrors convertData.mjs)
+src/lib/parseWorkbook.ts       browser-side .xlsx parser for the upload feature
+src/context/FilterContext.tsx  global filter + active-dataset state
 src/components/dashboard/      dashboard sections & charts (components/dashboard/charts, components/dashboard/ui)
 src/app/page.tsx               assembles the dashboard
 ```
