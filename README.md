@@ -20,7 +20,9 @@ npm run convert-data
 
 ### Uploading a different spreadsheet at runtime
 
-The header includes a **file upload control**: pick any `.xlsx`/`.xls` file with the same columns as `data.xlsx` and click **Run Analysis**. The file is parsed entirely in the browser (via `src/lib/parseWorkbook.ts`, using the `xlsx` package loaded on demand so it doesn't bloat the initial page load) and swaps the dashboard's active dataset — no redeploy or server round-trip needed. Click **Reset to default data.xlsx** to go back to the committed dataset. Because parsing now also happens client-side, `xlsx` is a regular `dependency` (not dev-only).
+The header includes a **file upload control**: pick any `.xlsx`, `.xls`, or `.csv` file with the same columns as `data.xlsx`. As soon as a file is selected it's parsed and a **preview** appears (row count, sheet name, and the first 5 rows) so you can sanity-check it before committing. Click **Run Analysis** to swap the dashboard's active dataset — no redeploy or server round-trip needed. Click **Reset to default data.xlsx** to go back to the committed dataset.
+
+The file is parsed entirely in the browser (via `src/lib/parseWorkbook.ts`, using the `xlsx` package loaded on demand so it doesn't bloat the initial page load). CSV vs. Excel format is auto-detected from the file content — there's no separate CSV/XLSX toggle needed. Because parsing now also happens client-side, `xlsx` is a regular `dependency` (not dev-only).
 
 ## Business logic
 

@@ -11,9 +11,11 @@ function normalizeCell(value: unknown): unknown {
   return value;
 }
 
-/** Parses an uploaded .xlsx/.xls file into Creative[], using the same column
- * mapping as scripts/convertData.mjs. Runs entirely in the browser — the xlsx
- * parser is dynamically imported so it doesn't bloat the initial bundle. */
+/** Parses an uploaded .xlsx/.xls/.csv file into Creative[], using the same
+ * column mapping as scripts/convertData.mjs. Runs entirely in the browser —
+ * the xlsx parser is dynamically imported so it doesn't bloat the initial
+ * bundle, and it auto-detects CSV vs. binary workbook formats from the file
+ * content, so no format switch is needed in the UI. */
 export async function parseWorkbookFile(file: File): Promise<ParsedWorkbook> {
   const XLSX = await import("xlsx");
   const buffer = await file.arrayBuffer();
