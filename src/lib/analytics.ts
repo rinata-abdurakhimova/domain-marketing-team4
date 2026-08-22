@@ -380,10 +380,15 @@ export function compareCpuByType(data: Creative[]): FormatCpuComparison {
   };
 }
 
+/** Below this many rows, a segment's average/correlation is treated as too
+ * noisy to act on — recommendations should flag it rather than assert it. */
+export const MIN_SEGMENT_SAMPLE_SIZE = 10;
+
 export interface MetricCorrelationSummary {
   hookRoiCorrelation: number;
   holdRoiCorrelation: number;
   averagePaidUnitsShare: number;
+  sampleSize: number;
 }
 
 export function computeMetricCorrelation(data: Creative[]): MetricCorrelationSummary {
@@ -400,5 +405,22 @@ export function computeMetricCorrelation(data: Creative[]): MetricCorrelationSum
       withHold.map((c) => c.roi)
     ),
     averagePaidUnitsShare: average(paidShares),
+    sampleSize: data.length,
+  };
+}
+
+export interface SegmentedMetricCorrelation {
+  overall: MetricCorrelationSummary;
+  mn: MetricCorrelationSummary;
+  wmn: MetricCorrelationSummary;
+}
+
+/** Same correlation as computeMetricCorrelation, broken out by audience so
+ * a recommendation can say whether the relationship depends on segment. */
+export function computeMetricCorrelationBySegment(data: Creative[]): SegmentedMetricCorrelation {
+  return {
+    overall: computeMetricCorrelation(data),
+    mn: computeMetricCorrelation(data.filter((c) => c.audience === "MN")),
+    wmn: computeMetricCorrelation(data.filter((c) => c.audience === "WMN")),
   };
 }
