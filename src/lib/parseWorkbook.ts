@@ -11,6 +11,21 @@ function normalizeCell(value: unknown): unknown {
   return value;
 }
 
+function normalizeHeaderKey(key: string): string {
+  return key.trim().toLowerCase();
+}
+
+/** Re-keys a parsed row so column matching is resilient to header
+ * whitespace/casing differences from re-saving a file in Excel/Sheets
+ * (e.g. "Success", " success ", "SUCCESS" all match "success"). */
+function normalizeRowKeys(row: Record<string, unknown>): Record<string, unknown> {
+  const normalized: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(row)) {
+    normalized[normalizeHeaderKey(key)] = value;
+  }
+  return normalized;
+}
+
 /** Parses an uploaded .xlsx/.xls/.csv file into Creative[], using the same
  * column mapping as scripts/convertData.mjs. Runs entirely in the browser —
  * the xlsx parser is dynamically imported so it doesn't bloat the initial
@@ -27,14 +42,16 @@ export async function parseWorkbookFile(file: File): Promise<ParsedWorkbook> {
   }
 
   const sheet = workbook.Sheets[sheetName];
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+  const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
     defval: null,
     raw: true,
   });
 
-  if (rows.length === 0) {
+  if (rawRows.length === 0) {
     throw new Error("The first sheet is empty.");
   }
+
+  const rows = rawRows.map(normalizeRowKeys);
 
   const firstRowKeys = new Set(Object.keys(rows[0]));
   const missing = REQUIRED_SOURCE_COLUMNS.filter((col) => !firstRowKeys.has(col));
@@ -49,7 +66,10 @@ export async function parseWorkbookFile(file: File): Promise<ParsedWorkbook> {
     for (const [sourceKey, targetKey] of Object.entries(CREATIVE_COLUMN_MAP)) {
       record[targetKey] = normalizeCell(row[sourceKey]);
     }
-    record.isEffective = record.success === "YES";
+    const successValue =
+      typeof record.success === "string" ? record.success.trim().toUpperCase() : record.success;
+    record.success = successValue === "YES" || successValue === "NO" ? successValue : record.success;
+    record.isEffective = successValue === "YES";
     return record as unknown as Creative;
   });
 
