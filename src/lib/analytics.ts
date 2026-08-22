@@ -319,3 +319,86 @@ function formatMoney(value: number): string {
     maximumFractionDigits: 0,
   }).format(value);
 }
+
+function average(values: number[]): number {
+  return values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : 0;
+}
+
+function pearsonCorrelation(xs: number[], ys: number[]): number {
+  const n = xs.length;
+  if (n === 0) return 0;
+  const meanX = average(xs);
+  const meanY = average(ys);
+  let numerator = 0;
+  let denomX = 0;
+  let denomY = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = xs[i] - meanX;
+    const dy = ys[i] - meanY;
+    numerator += dx * dy;
+    denomX += dx * dx;
+    denomY += dy * dy;
+  }
+  const denominator = Math.sqrt(denomX * denomY);
+  return denominator === 0 ? 0 : numerator / denominator;
+}
+
+export interface AudienceRoiComparison {
+  mnAverageRoi: number;
+  wmnAverageRoi: number;
+  mnCount: number;
+  wmnCount: number;
+}
+
+/** Compares the same metric (ROI) across audiences — never mixed with CPU Slay. */
+export function compareRoiByAudience(data: Creative[]): AudienceRoiComparison {
+  const mnRows = data.filter((c) => c.audience === "MN");
+  const wmnRows = data.filter((c) => c.audience === "WMN");
+  return {
+    mnAverageRoi: average(mnRows.map((c) => c.roi)),
+    wmnAverageRoi: average(wmnRows.map((c) => c.roi)),
+    mnCount: mnRows.length,
+    wmnCount: wmnRows.length,
+  };
+}
+
+export interface FormatCpuComparison {
+  motionAverageCpu: number;
+  staticAverageCpu: number;
+  motionCount: number;
+  staticCount: number;
+}
+
+export function compareCpuByType(data: Creative[]): FormatCpuComparison {
+  const motionRows = data.filter((c) => c.type === "Motion");
+  const staticRows = data.filter((c) => c.type === "Static");
+  return {
+    motionAverageCpu: average(motionRows.map((c) => c.cpu)),
+    staticAverageCpu: average(staticRows.map((c) => c.cpu)),
+    motionCount: motionRows.length,
+    staticCount: staticRows.length,
+  };
+}
+
+export interface MetricCorrelationSummary {
+  hookRoiCorrelation: number;
+  holdRoiCorrelation: number;
+  averagePaidUnitsShare: number;
+}
+
+export function computeMetricCorrelation(data: Creative[]): MetricCorrelationSummary {
+  const withHold = data.filter((c) => c.hold !== null);
+  const paidShares = data.map((c) => c.paidUnitsShare).filter((v): v is number => v !== null);
+
+  return {
+    hookRoiCorrelation: pearsonCorrelation(
+      data.map((c) => c.hook),
+      data.map((c) => c.roi)
+    ),
+    holdRoiCorrelation: pearsonCorrelation(
+      withHold.map((c) => c.hold as number),
+      withHold.map((c) => c.roi)
+    ),
+    averagePaidUnitsShare: average(paidShares),
+  };
+}
