@@ -348,6 +348,8 @@ export interface AudienceRoiComparison {
   wmnAverageRoi: number;
   mnCount: number;
   wmnCount: number;
+  mnSpend: number;
+  wmnSpend: number;
 }
 
 /** Compares the same metric (ROI) across audiences — never mixed with CPU Slay. */
@@ -359,6 +361,8 @@ export function compareRoiByAudience(data: Creative[]): AudienceRoiComparison {
     wmnAverageRoi: average(wmnRows.map((c) => c.roi)),
     mnCount: mnRows.length,
     wmnCount: wmnRows.length,
+    mnSpend: sumBy(mnRows, (c) => c.spend),
+    wmnSpend: sumBy(wmnRows, (c) => c.spend),
   };
 }
 
@@ -367,6 +371,8 @@ export interface FormatCpuComparison {
   staticAverageCpu: number;
   motionCount: number;
   staticCount: number;
+  motionSpend: number;
+  staticSpend: number;
 }
 
 export function compareCpuByType(data: Creative[]): FormatCpuComparison {
@@ -377,6 +383,8 @@ export function compareCpuByType(data: Creative[]): FormatCpuComparison {
     staticAverageCpu: average(staticRows.map((c) => c.cpu)),
     motionCount: motionRows.length,
     staticCount: staticRows.length,
+    motionSpend: sumBy(motionRows, (c) => c.spend),
+    staticSpend: sumBy(staticRows, (c) => c.spend),
   };
 }
 

@@ -24,12 +24,14 @@ function ReportCard({
   rows,
   conclusion,
   tone,
+  projection,
 }: {
   icon: string;
   title: string;
   rows: { label: string; value: string; valueClassName?: string }[];
   conclusion: string;
   tone: Tone;
+  projection?: string;
 }) {
   const bubbleClass =
     tone === "good"
@@ -72,18 +74,30 @@ function ReportCard({
       <p className={`mt-3 rounded-xl p-3 text-xs font-medium ${conclusionClass}`}>
         {conclusionIcon} {conclusion}
       </p>
+
+      {projection && (
+        <p className="mt-2 rounded-xl bg-slate-50 p-3 text-xs font-medium text-slate-600">📊 {projection}</p>
+      )}
     </Card>
   );
 }
 
-function buildAudienceInsight(comparison: AudienceRoiComparison): { tone: Tone; conclusion: string } {
-  const { mnAverageRoi, wmnAverageRoi, mnCount, wmnCount } = comparison;
+interface AudienceInsight {
+  tone: Tone;
+  conclusion: string;
+  projection?: string;
+  worseAudience: "MN" | "WMN" | null;
+}
+
+function buildAudienceInsight(comparison: AudienceRoiComparison): AudienceInsight {
+  const { mnAverageRoi, wmnAverageRoi, mnCount, wmnCount, mnSpend, wmnSpend } = comparison;
 
   if (mnCount < MIN_SEGMENT_SAMPLE_SIZE || wmnCount < MIN_SEGMENT_SAMPLE_SIZE) {
     const thin = mnCount < wmnCount ? `MN (${formatNumber(mnCount)} rows)` : `WMN (${formatNumber(wmnCount)} rows)`;
     return {
       tone: "insufficient",
       conclusion: `Not enough data in ${thin} to draw a reliable conclusion yet — need at least ${MIN_SEGMENT_SAMPLE_SIZE} creatives per audience.`,
+      worseAudience: null,
     };
   }
 
@@ -92,6 +106,18 @@ function buildAudienceInsight(comparison: AudienceRoiComparison): { tone: Tone; 
   const worse = mnIsBetter ? "WMN" : "MN";
   const betterRoi = mnIsBetter ? mnAverageRoi : wmnAverageRoi;
   const worseRoi = mnIsBetter ? wmnAverageRoi : mnAverageRoi;
+  const worseSpend = mnIsBetter ? wmnSpend : mnSpend;
+
+  // Purely arithmetic what-if: if the spend currently sitting on the worse
+  // audience earned the better audience's average ROI instead, using
+  // verified historical averages — not a forecast of future behavior.
+  const projectedGain = worseSpend * (betterRoi - worseRoi);
+  const projection =
+    worseSpend > 0
+      ? `At current average rates, redirecting the ${formatCurrency(worseSpend)} now spent on ${worse} toward ${better}-level performance would be worth an estimated +${formatCurrency(
+          projectedGain
+        )} more than today.`
+      : undefined;
 
   if (worseRoi <= 0) {
     return {
@@ -101,6 +127,8 @@ function buildAudienceInsight(comparison: AudienceRoiComparison): { tone: Tone; 
       )}) — recommend pausing ${worse} spend and shifting budget to ${better} (avg ROI ${formatSignedPercent(
         betterRoi
       )}).`,
+      projection,
+      worseAudience: worse,
     };
   }
 
@@ -109,11 +137,13 @@ function buildAudienceInsight(comparison: AudienceRoiComparison): { tone: Tone; 
     conclusion: `Both audiences are profitable, but ${better} outperforms ${worse} (${formatSignedPercent(
       betterRoi
     )} vs ${formatSignedPercent(worseRoi)}) — consider shifting more budget toward ${better}.`,
+    projection,
+    worseAudience: worse,
   };
 }
 
-function buildFormatInsight(comparison: FormatCpuComparison): { tone: Tone; conclusion: string } {
-  const { motionAverageCpu, staticAverageCpu, motionCount, staticCount } = comparison;
+function buildFormatInsight(comparison: FormatCpuComparison): { tone: Tone; conclusion: string; projection?: string } {
+  const { motionAverageCpu, staticAverageCpu, motionCount, staticCount, motionSpend, staticSpend } = comparison;
 
   if (motionCount < MIN_SEGMENT_SAMPLE_SIZE || staticCount < MIN_SEGMENT_SAMPLE_SIZE) {
     const thin =
@@ -129,6 +159,17 @@ function buildFormatInsight(comparison: FormatCpuComparison): { tone: Tone; conc
   const pricier = motionCheaper ? "Static" : "Motion";
   const cheaperCpu = motionCheaper ? motionAverageCpu : staticAverageCpu;
   const pricierCpu = motionCheaper ? staticAverageCpu : motionAverageCpu;
+  const pricierSpend = motionCheaper ? staticSpend : motionSpend;
+
+  // Same-budget what-if: how many more units that spend would buy at the
+  // cheaper format's historical average CPU — arithmetic only.
+  const extraUnits = pricierCpu > 0 ? pricierSpend * (1 / cheaperCpu - 1 / pricierCpu) : 0;
+  const projection =
+    pricierSpend > 0 && extraUnits > 0
+      ? `At current rates, the ${formatCurrency(pricierSpend)} spent on ${pricier} would buy roughly ${formatNumber(
+          Math.round(extraUnits)
+        )} more units if spent on ${cheaper} instead.`
+      : undefined;
 
   return {
     tone: "good",
@@ -136,6 +177,7 @@ function buildFormatInsight(comparison: FormatCpuComparison): { tone: Tone; conc
       pricierCpu,
       true
     )}) than ${pricier} — prioritize ${cheaper} creatives.`,
+    projection,
   };
 }
 
@@ -148,7 +190,10 @@ function correlationRow(label: string, summary: MetricCorrelationSummary | null)
   };
 }
 
-function buildCorrelationInsight(segments: SegmentedMetricCorrelation): { tone: Tone; conclusion: string } {
+function buildCorrelationInsight(
+  segments: SegmentedMetricCorrelation,
+  worseAudienceToDrop: "MN" | "WMN" | null
+): { tone: Tone; conclusion: string; projection?: string } {
   const { overall, mn, wmn } = segments;
 
   if (overall.sampleSize < MIN_SEGMENT_SAMPLE_SIZE) {
@@ -174,12 +219,25 @@ function buildCorrelationInsight(segments: SegmentedMetricCorrelation): { tone: 
       ? ", and the relationship differs notably between MN and WMN"
       : ", consistently across both MN and WMN";
 
+  // If Audience Strategy recommends dropping a segment, show what the
+  // dataset's correlation profile would look like without it — this is just
+  // the already-computed remaining segment's numbers, not a new forecast.
+  let projection: string | undefined;
+  if (worseAudienceToDrop && bothSegmentsHaveData && segmentsDiffer) {
+    const remaining = worseAudienceToDrop === "WMN" ? mn : wmn;
+    const remainingLabel = worseAudienceToDrop === "WMN" ? "MN" : "WMN";
+    projection = `If ${worseAudienceToDrop} spend is phased out per the Audience Strategy recommendation, the overall Hook/Hold ↔ ROI correlation would shift toward the ${remainingLabel} profile (${remaining.hookRoiCorrelation.toFixed(
+      2
+    )} / ${remaining.holdRoiCorrelation.toFixed(2)}).`;
+  }
+
   if (overallWeak) {
     return {
       tone: "neutral",
       conclusion: `Attention metrics (Hook, Hold) don't meaningfully correlate with ROI${segmentClause} — optimize creatives for Paid Conversion (avg ${formatPercent(
         overall.averagePaidUnitsShare
       )}) instead of attention metrics.`,
+      projection,
     };
   }
 
@@ -188,6 +246,7 @@ function buildCorrelationInsight(segments: SegmentedMetricCorrelation): { tone: 
     conclusion: `Attention metrics do correlate with ROI here${segmentClause} — Hook/Hold remain useful early signals alongside Paid Conversion (avg ${formatPercent(
       overall.averagePaidUnitsShare
     )}).`,
+    projection,
   };
 }
 
@@ -208,7 +267,10 @@ export function RecommendationsSection() {
 
   const audienceInsight = buildAudienceInsight(roiComparison);
   const formatInsight = buildFormatInsight(cpuComparison);
-  const correlationInsight = buildCorrelationInsight(correlationSegments);
+  const correlationInsight = buildCorrelationInsight(
+    correlationSegments,
+    audienceInsight.tone === "bad" ? audienceInsight.worseAudience : null
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -246,6 +308,7 @@ export function RecommendationsSection() {
             },
           ]}
           conclusion={audienceInsight.conclusion}
+          projection={audienceInsight.projection}
         />
 
         <ReportCard
@@ -265,6 +328,7 @@ export function RecommendationsSection() {
             },
           ]}
           conclusion={formatInsight.conclusion}
+          projection={formatInsight.projection}
         />
 
         <ReportCard
@@ -284,6 +348,7 @@ export function RecommendationsSection() {
             },
           ]}
           conclusion={correlationInsight.conclusion}
+          projection={correlationInsight.projection}
         />
       </div>
     </div>
