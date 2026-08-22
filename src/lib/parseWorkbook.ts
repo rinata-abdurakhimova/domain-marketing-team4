@@ -15,6 +15,21 @@ function normalizeHeaderKey(key: string): string {
   return key.trim().toLowerCase();
 }
 
+/** Same business rule as scripts/convertData.mjs / data.xlsx: MN is
+ * effective when ROI > 0, WMN is effective when CPU Slay < $30. Used only
+ * as a fallback for raw exports that don't already include a success
+ * column (or leave individual cells blank). */
+function deriveSuccess(audience: unknown, roi: unknown, cpuSlay: unknown): "YES" | "NO" {
+  const normalizedAudience = typeof audience === "string" ? audience.trim().toUpperCase() : null;
+  if (normalizedAudience === "MN" && typeof roi === "number") {
+    return roi > 0 ? "YES" : "NO";
+  }
+  if (normalizedAudience === "WMN" && typeof cpuSlay === "number") {
+    return cpuSlay < 30 ? "YES" : "NO";
+  }
+  return "NO";
+}
+
 /** Re-keys a parsed row so column matching is resilient to header
  * whitespace/casing differences from re-saving a file in Excel/Sheets
  * (e.g. "Success", " success ", "SUCCESS" all match "success"). */
@@ -66,9 +81,11 @@ export async function parseWorkbookFile(file: File): Promise<ParsedWorkbook> {
     for (const [sourceKey, targetKey] of Object.entries(CREATIVE_COLUMN_MAP)) {
       record[targetKey] = normalizeCell(row[sourceKey]);
     }
-    const successValue =
+    const rawSuccess =
       typeof record.success === "string" ? record.success.trim().toUpperCase() : record.success;
-    record.success = successValue === "YES" || successValue === "NO" ? successValue : record.success;
+    const explicitSuccess = rawSuccess === "YES" || rawSuccess === "NO" ? rawSuccess : null;
+    const successValue = explicitSuccess ?? deriveSuccess(record.audience, record.roi, record.cpuSlay);
+    record.success = successValue;
     record.isEffective = successValue === "YES";
     return record as unknown as Creative;
   });

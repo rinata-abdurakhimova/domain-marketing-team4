@@ -29,4 +29,7 @@ export const CREATIVE_COLUMN_MAP: Record<string, string> = {
   success: "success",
 };
 
-export const REQUIRED_SOURCE_COLUMNS = ["audience", "success", "spend"];
+// "success" is intentionally not required: some raw creative exports don't
+// include it at all, in which case parseWorkbook.ts derives it from ROI/CPU
+// Slay using the same business rule as the analyst-provided data.xlsx.
+export const REQUIRED_SOURCE_COLUMNS = ["audience", "spend"];
